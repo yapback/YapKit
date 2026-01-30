@@ -220,6 +220,6 @@ public extension View {
 
 #Preview {
     FeedbackView(
-        config: FeedbackConfig(appId: "preview", apiBaseURL: "https://example.com")
+        config: FeedbackConfig(apiKey: "preview", apiBaseURL: "https://example.com")
     )
 }

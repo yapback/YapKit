@@ -35,10 +35,3 @@
 /// - Success animation and error handling built-in
 /// - Works on iOS and macOS
 
-// Re-export all public types
-@_exported import struct YapKit.FeedbackConfig
-@_exported import struct YapKit.FeedbackView
-@_exported import actor YapKit.FeedbackService
-@_exported import struct YapKit.FeedbackResponse
-@_exported import enum YapKit.FeedbackError
-@_exported import struct YapKit.DeviceInfo
