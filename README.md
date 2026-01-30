@@ -42,7 +42,7 @@ import YapKit
 // Define once, use across your app
 extension FeedbackConfig {
     static let myApp = FeedbackConfig(
-        apiKey: "fk_live_your_api_key_here"
+        apiKey: "yb_live_your_api_key_here"
     )
 }
 ```
@@ -52,7 +52,7 @@ For self-hosted deployments, specify your API URL:
 ```swift
 extension FeedbackConfig {
     static let myApp = FeedbackConfig(
-        apiKey: "fk_live_your_api_key_here",
+        apiKey: "yb_live_your_api_key_here",
         apiBaseURL: "https://your-domain.com"
     )
 }
@@ -118,7 +118,7 @@ do {
 
 ```swift
 FeedbackConfig(
-    apiKey: String,       // Your API key from the dashboard (starts with "fk_live_")
+    apiKey: String,       // Your API key from the dashboard (starts with "yb_live_")
     apiBaseURL: String    // Optional: defaults to "https://yapback.dev"
 )
 ```

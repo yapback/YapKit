@@ -18,7 +18,7 @@ public struct FeedbackConfig: Sendable {
 
     /// Creates a new feedback configuration.
     /// - Parameters:
-    ///   - apiKey: Your API key from the YapKit dashboard (starts with "fk_live_")
+    ///   - apiKey: Your API key from the Yapback dashboard (starts with "yb_live_")
     ///   - apiBaseURL: Base URL of the feedback service (e.g., "https://yapback.dev")
     public init(apiKey: String, apiBaseURL: String = "https://yapback.dev") {
         self.apiKey = apiKey

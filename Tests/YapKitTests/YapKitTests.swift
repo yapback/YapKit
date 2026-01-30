@@ -5,24 +5,24 @@ final class YapKitTests: XCTestCase {
 
     func testConfigInitialization() {
         let config = FeedbackConfig(
-            apiKey: "fk_live_test123",
+            apiKey: "yb_live_test123",
             apiBaseURL: "https://example.com"
         )
 
-        XCTAssertEqual(config.apiKey, "fk_live_test123")
+        XCTAssertEqual(config.apiKey, "yb_live_test123")
         XCTAssertEqual(config.apiBaseURL.absoluteString, "https://example.com")
         XCTAssertEqual(config.feedbackURL.absoluteString, "https://example.com/api/feedback")
     }
 
     func testConfigWithDefaultURL() {
-        let config = FeedbackConfig(apiKey: "fk_live_test123")
+        let config = FeedbackConfig(apiKey: "yb_live_test123")
 
         XCTAssertEqual(config.apiBaseURL.absoluteString, "https://yapback.dev")
     }
 
     func testConfigWithTrailingSlash() {
         let config = FeedbackConfig(
-            apiKey: "fk_live_test123",
+            apiKey: "yb_live_test123",
             apiBaseURL: "https://example.com/"
         )
 
