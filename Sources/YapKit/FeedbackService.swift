@@ -19,6 +19,7 @@ public actor FeedbackService {
     
     /// Submits feedback to the API.
     /// - Parameters:
+    ///   - type: The type of feedback being submitted
     ///   - message: The feedback message
     ///   - email: Optional contact email (stored privately, not exposed on GitHub)
     ///   - deviceInfo: Device metadata (auto-collected if nil)
@@ -26,13 +27,15 @@ public actor FeedbackService {
     /// - Throws: `FeedbackError` if submission fails
     @MainActor
     public func submit(
+        type: FeedbackType? = nil,
         message: String,
         email: String? = nil,
         deviceInfo: DeviceInfo? = nil
     ) async throws -> FeedbackResponse {
         let info = deviceInfo ?? DeviceInfo.current
-        
+
         let payload = FeedbackPayload(
+            type: type,
             message: message,
             email: email,
             deviceInfo: info
@@ -68,7 +71,30 @@ public actor FeedbackService {
 
 // MARK: - Request/Response Types
 
+/// The type of feedback being submitted.
+public enum FeedbackType: String, CaseIterable, Codable, Sendable {
+    case incorrectBehavior = "incorrect_behavior"
+    case crash = "crash"
+    case slowUnresponsive = "slow_unresponsive"
+    case suggestion = "suggestion"
+
+    /// Human-readable label for display in the UI.
+    public var label: String {
+        switch self {
+        case .incorrectBehavior:
+            return "Incorrect/unexpected behaviour"
+        case .crash:
+            return "Application crash"
+        case .slowUnresponsive:
+            return "Application slow/unresponsive"
+        case .suggestion:
+            return "Suggestion"
+        }
+    }
+}
+
 struct FeedbackPayload: Encodable {
+    let type: FeedbackType?
     let message: String
     let email: String?
     let deviceInfo: DeviceInfo
