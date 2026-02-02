@@ -17,20 +17,14 @@ public actor FeedbackService {
         self.session = session
     }
     
-    /// Submits feedback to the API.
-    /// - Parameters:
-    ///   - type: The type of feedback being submitted
-    ///   - message: The feedback message
-    ///   - email: Optional contact email (stored privately, not exposed on GitHub)
-    ///   - deviceInfo: Device metadata (auto-collected if nil)
-    /// - Returns: The response from the server
-    /// - Throws: `FeedbackError` if submission fails
+    /// Submits feedback to the API (internal use with pre-uploaded attachments).
     @MainActor
-    public func submit(
+    func submit(
         type: FeedbackType? = nil,
         message: String,
         email: String? = nil,
-        deviceInfo: DeviceInfo? = nil
+        deviceInfo: DeviceInfo? = nil,
+        attachments: [AttachmentSubmission]? = nil
     ) async throws -> FeedbackResponse {
         let info = deviceInfo ?? DeviceInfo.current
 
@@ -38,21 +32,22 @@ public actor FeedbackService {
             type: type,
             message: message,
             email: email,
-            deviceInfo: info
+            deviceInfo: info,
+            attachments: attachments
         )
-        
+
         var request = URLRequest(url: config.feedbackURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONEncoder().encode(payload)
-        
+
         let (data, response) = try await session.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FeedbackError.invalidResponse
         }
-        
+
         guard (200...299).contains(httpResponse.statusCode) else {
             // Try to extract error message from response
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
@@ -60,12 +55,46 @@ public actor FeedbackService {
             }
             throw FeedbackError.httpError(statusCode: httpResponse.statusCode)
         }
-        
+
         do {
             return try JSONDecoder().decode(FeedbackResponse.self, from: data)
         } catch {
             throw FeedbackError.decodingError(error)
         }
+    }
+
+    /// Submits feedback with attachments.
+    /// Handles the full flow: upload attachments, then submit feedback.
+    /// - Parameters:
+    ///   - type: The type of feedback being submitted
+    ///   - message: The feedback message
+    ///   - email: Optional contact email
+    ///   - attachments: Attachments to upload
+    ///   - progressHandler: Optional callback for upload progress
+    /// - Returns: The response from the server
+    @MainActor
+    public func submit(
+        type: FeedbackType? = nil,
+        message: String,
+        email: String? = nil,
+        attachments: [FeedbackAttachment],
+        progressHandler: AttachmentUploader.ProgressHandler? = nil
+    ) async throws -> FeedbackResponse {
+        // Upload attachments first
+        var uploadedAttachments: [AttachmentSubmission] = []
+
+        if !attachments.isEmpty {
+            let uploader = AttachmentUploader(config: config, session: session)
+            uploadedAttachments = try await uploader.upload(attachments, progressHandler: progressHandler)
+        }
+
+        // Submit feedback with attachment metadata
+        return try await submit(
+            type: type,
+            message: message,
+            email: email,
+            attachments: uploadedAttachments.isEmpty ? nil : uploadedAttachments
+        )
     }
 }
 
@@ -98,6 +127,7 @@ struct FeedbackPayload: Encodable {
     let message: String
     let email: String?
     let deviceInfo: DeviceInfo
+    let attachments: [AttachmentSubmission]?
 }
 
 /// Response from a successful feedback submission.
