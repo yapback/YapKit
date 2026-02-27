@@ -130,8 +130,8 @@ public actor AttachmentUploader {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
 
-        let requestBody = [
-            "attachments": attachments.map { attachment in
+        let attachmentRequests = await MainActor.run {
+            attachments.map { attachment in
                 AttachmentUploadRequest(
                     fileName: attachment.fileName,
                     fileSize: attachment.fileSize,
@@ -141,6 +141,9 @@ public actor AttachmentUploader {
                     durationSeconds: attachment.durationSeconds
                 )
             }
+        }
+        let requestBody = [
+            "attachments": attachmentRequests
         ]
 
         request.httpBody = try JSONEncoder().encode(requestBody)
@@ -152,13 +155,17 @@ public actor AttachmentUploader {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+            if let errorResponse = try? await MainActor.run({
+                try JSONDecoder().decode(ErrorResponse.self, from: data)
+            }) {
                 throw AttachmentUploadError.failedToGetUploadUrls(errorResponse.error)
             }
             throw AttachmentUploadError.failedToGetUploadUrls("HTTP \(httpResponse.statusCode)")
         }
 
-        let urlResponse = try JSONDecoder().decode(UploadUrlResponse.self, from: data)
+        let urlResponse = try await MainActor.run {
+            try JSONDecoder().decode(UploadUrlResponse.self, from: data)
+        }
         return urlResponse.uploadUrls
     }
 
