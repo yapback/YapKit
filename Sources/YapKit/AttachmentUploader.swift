@@ -130,17 +130,15 @@ public actor AttachmentUploader {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
 
-        let attachmentRequests = await MainActor.run {
-            attachments.map { attachment in
-                AttachmentUploadRequest(
-                    fileName: attachment.fileName,
-                    fileSize: attachment.fileSize,
-                    mimeType: attachment.mimeType,
-                    width: attachment.width,
-                    height: attachment.height,
-                    durationSeconds: attachment.durationSeconds
-                )
-            }
+        let attachmentRequests = attachments.map { attachment in
+            AttachmentUploadRequest(
+                fileName: attachment.fileName,
+                fileSize: attachment.fileSize,
+                mimeType: attachment.mimeType,
+                width: attachment.width,
+                height: attachment.height,
+                durationSeconds: attachment.durationSeconds
+            )
         }
         let requestBody = [
             "attachments": attachmentRequests
@@ -155,17 +153,13 @@ public actor AttachmentUploader {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            if let errorResponse = try? await MainActor.run({
-                try JSONDecoder().decode(ErrorResponse.self, from: data)
-            }) {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                 throw AttachmentUploadError.failedToGetUploadUrls(errorResponse.error)
             }
             throw AttachmentUploadError.failedToGetUploadUrls("HTTP \(httpResponse.statusCode)")
         }
 
-        let urlResponse = try await MainActor.run {
-            try JSONDecoder().decode(UploadUrlResponse.self, from: data)
-        }
+        let urlResponse = try JSONDecoder().decode(UploadUrlResponse.self, from: data)
         return urlResponse.uploadUrls
     }
 
