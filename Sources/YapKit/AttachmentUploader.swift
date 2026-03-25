@@ -182,6 +182,7 @@ public actor AttachmentUploader {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue(mimeType, forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = data
 
         let (_, response) = try await session.data(for: request)

@@ -116,7 +116,7 @@ struct UploadUrlResponse: Decodable {
 struct UploadUrl: Decodable {
     let storagePath: String
     let signedUrl: String
-    let token: String
+    let token: String?
 }
 
 struct UploadLimits: Decodable {
