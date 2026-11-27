@@ -94,6 +94,14 @@ struct AttachmentUploadRequest: Encodable {
     let durationSeconds: Double?
 }
 
+/// Request body for the upload-url endpoint.
+struct UploadUrlRequest: Encodable {
+    let attachments: [AttachmentUploadRequest]
+    /// Tells the server this SDK can upload straight to storage using the
+    /// headers it returns, so files aren't limited by the server's proxy.
+    let directUpload: Bool
+}
+
 /// Metadata sent with feedback submission after upload.
 struct AttachmentSubmission: Encodable {
     let storagePath: String
@@ -117,6 +125,9 @@ struct UploadUrl: Decodable {
     let storagePath: String
     let signedUrl: String
     let token: String?
+    /// Headers to send with the upload, when the server returns a direct
+    /// storage URL. When absent, the file goes to the server's upload proxy.
+    let headers: [String: String]?
 }
 
 struct UploadLimits: Decodable {
