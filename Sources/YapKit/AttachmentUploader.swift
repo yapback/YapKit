@@ -1,5 +1,5 @@
 // AttachmentUploader.swift
-// Handles uploading attachments to Supabase Storage via signed URLs
+// Handles uploading attachments, directly to storage when the server allows it
 
 import Foundation
 
@@ -75,7 +75,7 @@ public actor AttachmentUploader {
         // 2. Request signed upload URLs from backend
         let uploadUrls = try await requestUploadUrls(for: attachments)
 
-        // 3. Upload each file to Supabase Storage
+        // 3. Upload each file
         var submissions: [AttachmentSubmission] = []
 
         for (index, attachment) in attachments.enumerated() {
@@ -93,6 +93,7 @@ public actor AttachmentUploader {
             try await uploadFile(
                 data: attachment.data,
                 to: uploadUrl.signedUrl,
+                headers: uploadUrl.headers,
                 mimeType: attachment.mimeType,
                 fileName: attachment.fileName
             )
@@ -140,9 +141,7 @@ public actor AttachmentUploader {
                 durationSeconds: attachment.durationSeconds
             )
         }
-        let requestBody = [
-            "attachments": attachmentRequests
-        ]
+        let requestBody = UploadUrlRequest(attachments: attachmentRequests, directUpload: true)
 
         request.httpBody = try JSONEncoder().encode(requestBody)
 
@@ -166,6 +165,7 @@ public actor AttachmentUploader {
     private func uploadFile(
         data: Data,
         to urlString: String,
+        headers: [String: String]?,
         mimeType: String,
         fileName: String
     ) async throws {
@@ -176,7 +176,18 @@ public actor AttachmentUploader {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue(mimeType, forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+
+        if let headers {
+            // Direct upload to storage: the server's headers carry a scoped
+            // upload token, so the API key isn't sent to the storage provider.
+            for (field, value) in headers {
+                request.setValue(value, forHTTPHeaderField: field)
+            }
+        } else {
+            // Upload through the server's proxy, authenticated with the API key.
+            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        }
+
         request.httpBody = data
 
         let (_, response) = try await session.data(for: request)
